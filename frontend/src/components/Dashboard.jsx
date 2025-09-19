@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { usersAPI, rolesAPI, permissionsAPI } from '../services/api';
 import Navigation from './layout/Navigation';
@@ -20,6 +20,7 @@ const Dashboard = () => {
     permissions: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -110,10 +111,10 @@ const Dashboard = () => {
 
   return (
     <div className="min-vh-100 gradient-bg">
-      <Navigation />
+      <Navigation onToggle={setSidebarCollapsed} />
       
       {/* Main Content */}
-      <div className="main-content">
+      <div className={`main-content ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="container-fluid py-4 px-4">
           {/* Header */}
           <div className="mb-4">

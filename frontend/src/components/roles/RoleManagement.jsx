@@ -18,6 +18,7 @@ const RoleManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
   const [error, setError] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     fetchRoles();
@@ -89,8 +90,8 @@ const RoleManagement = () => {
   if (loading) {
     return (
       <div className="min-vh-100 bg-light">
-        <Navigation />
-        <div className="d-flex align-items-center justify-content-center" style={{height: '16rem'}}>
+        <Navigation onToggle={setSidebarCollapsed} />
+        <div className={`d-flex align-items-center justify-content-center main-content ${sidebarCollapsed ? 'collapsed' : ''}`} style={{height: '16rem'}}>
           <div className="spinner-border text-primary" style={{width: '8rem', height: '8rem'}} role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
@@ -101,9 +102,9 @@ const RoleManagement = () => {
 
   return (
     <div className="min-vh-100 bg-gradient-primary">
-      <Navigation />
+      <Navigation onToggle={setSidebarCollapsed} />
       
-      <div className="container-fluid py-4">
+      <div className={`container-fluid py-4 main-content ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="px-3 py-4">
           <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between">
             <div className="flex-grow-1">

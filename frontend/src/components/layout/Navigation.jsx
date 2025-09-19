@@ -14,7 +14,7 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 
-const Navigation = () => {
+const Navigation = ({ onToggle }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, logout, isAdmin } = useAuth();
@@ -30,19 +30,19 @@ const Navigation = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, current: location.pathname === '/dashboard' },
-    ...(hasPermission('manage_users') ? [
-      { name: 'Users', href: '/users', icon: UsersIcon, current: location.pathname.startsWith('/users') },
+    ...(hasPermission('view users') || isAdmin() ? [
+      { name: 'Users', href: '/users', icon: UsersIcon, current: location.pathname === '/users' }
     ] : []),
-    ...(hasPermission('manage_roles') ? [
-      { name: 'Roles', href: '/roles', icon: ShieldCheckIcon, current: location.pathname.startsWith('/roles') },
+    ...(hasPermission('view roles') || isAdmin() ? [
+      { name: 'Roles', href: '/roles', icon: ShieldCheckIcon, current: location.pathname === '/roles' }
     ] : []),
-    ...(hasPermission('manage_permissions') ? [
-      { name: 'Permissions', href: '/permissions', icon: KeyIcon, current: location.pathname.startsWith('/permissions') },
+    ...(hasPermission('view permissions') || isAdmin() ? [
+      { name: 'Permissions', href: '/permissions', icon: KeyIcon, current: location.pathname === '/permissions' }
     ] : []),
   ];
 
   return (
-    <div className={`position-fixed top-0 start-0 bottom-0 z-3 ${isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'} transition-all`} style={{zIndex: 1050}}>
+    <div className={`position-fixed top-0 start-0 bottom-0 ${isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'} transition-all`} style={{zIndex: 1050}}>
       {/* Sidebar */}
       <div className="d-flex flex-column h-100 sidebar-gradient shadow-lg">
         {/* Header */}
@@ -58,7 +58,11 @@ const Navigation = () => {
             </div>
           )}
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => {
+              const newCollapsed = !isCollapsed;
+              setIsCollapsed(newCollapsed);
+              onToggle?.(newCollapsed);
+            }}
             className="btn btn-outline-light btn-sm rounded-3 hover-scale"
             style={{border: 'none', backgroundColor: 'rgba(255,255,255,0.1)'}}
           >
@@ -108,40 +112,86 @@ const Navigation = () => {
           <div className="position-relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className={`btn w-100 d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'gap-3'} p-3 rounded-3 hover-lift`}
-              style={{backgroundColor: 'rgba(255,255,255,0.1)', border: 'none'}}
+              className={`btn w-100 d-flex align-items-center ${isCollapsed ? 'justify-content-center' : ''} p-3 rounded-3 shadow-lg`}
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                gap: isCollapsed ? '0' : '0.75rem'
+              }}
             >
-              <div className="d-flex align-items-center justify-content-center primary-gradient rounded-circle flex-shrink-0" style={{width: '2rem', height: '2rem'}}>
+              <div className="d-flex align-items-center justify-content-center primary-gradient rounded-circle flex-shrink-0 shadow-lg" 
+                   style={{
+                     width: '2.5rem', 
+                     height: '2.5rem',
+                     background: 'linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899)',
+                     boxShadow: '0 0 0 2px rgba(255,255,255,0.2)'
+                   }}>
                 <UserIcon className="text-white" style={{width: '1.25rem', height: '1.25rem'}} />
               </div>
               {!isCollapsed && (
                 <div className="flex-grow-1 text-start">
-                  <div className="small fw-medium text-white text-truncate">{user?.name}</div>
-                  <div className="text-light text-truncate" style={{fontSize: '0.75rem'}}>{user?.email}</div>
+                  <div className="small fw-bold text-white text-truncate" style={{textShadow: '0 1px 2px rgba(0,0,0,0.1)'}}>{user?.name}</div>
+                  <div className="text-light text-truncate opacity-75" style={{fontSize: '0.75rem'}}>{user?.email}</div>
+                </div>
+              )}
+              {!isCollapsed && (
+                <div className="flex-shrink-0">
+                  <ChevronRightIcon 
+                    className="text-light" 
+                    style={{
+                      width: '1rem', 
+                      height: '1rem',
+                      transform: userMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease'
+                    }} 
+                  />
                 </div>
               )}
             </button>
 
             {/* User Dropdown Menu */}
             {userMenuOpen && (
-              <div className={`position-absolute ${isCollapsed ? 'start-100 bottom-0' : 'end-0'} bg-white rounded-3 shadow-lg border py-2 z-3`} 
+              <div className={`position-absolute ${isCollapsed ? '' : 'end-0'} bg-white rounded-3 shadow-lg border overflow-hidden`} 
                    style={{
-                     width: '12rem',
+                     width: '14rem',
                      bottom: isCollapsed ? '0' : '4rem',
-                     left: isCollapsed ? '1rem' : 'auto'
+                     left: isCollapsed ? '100%' : 'auto',
+                     marginLeft: isCollapsed ? '1rem' : '0',
+                     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                     zIndex: 1050
                    }}>
-                <div className="px-3 py-2 border-bottom">
-                  <div className="small fw-medium text-dark">{user?.name}</div>
-                  <div className="text-muted" style={{fontSize: '0.75rem'}}>{user?.email}</div>
+                <div className="px-4 py-3 border-bottom" 
+                     style={{
+                       background: 'linear-gradient(90deg, #eff6ff, #faf5ff)'
+                     }}>
+                  <div className="small fw-bold text-dark text-truncate">{user?.name}</div>
+                  <div className="text-muted text-truncate" style={{fontSize: '0.75rem', marginTop: '0.125rem'}}>{user?.email}</div>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="btn btn-link w-100 d-flex align-items-center px-3 py-2 text-start text-decoration-none text-dark hover-bg-light"
-                  style={{border: 'none'}}
-                >
-                  <ArrowRightOnRectangleIcon className="me-3 text-muted" style={{width: '1rem', height: '1rem'}} />
-                  Sign out
-                </button>
+                <div className="py-1">
+                  <button
+                    onClick={handleLogout}
+                    className="btn w-100 d-flex align-items-center text-start px-4 py-3 text-secondary border-0 rounded-0"
+                    style={{
+                      transition: 'all 0.15s ease',
+                      gap: '0.75rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#fef2f2';
+                      e.target.style.color = '#dc2626';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = 'transparent';
+                      e.target.style.color = '#6c757d';
+                    }}
+                  >
+                    <ArrowRightOnRectangleIcon 
+                      className="text-muted" 
+                      style={{width: '1rem', height: '1rem'}} 
+                    />
+                    <span className="fw-medium">Sign out</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

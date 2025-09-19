@@ -23,6 +23,7 @@ const PermissionManagement = () => {
   const [selectedPermission, setSelectedPermission] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [permissionToDelete, setPermissionToDelete] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     fetchPermissions();
@@ -104,8 +105,8 @@ const PermissionManagement = () => {
   if (loading) {
     return (
       <div className="min-vh-100 bg-gradient-primary">
-        <Navigation />
-        <div className="d-flex align-items-center justify-content-center" style={{height: '16rem'}}>
+        <Navigation onToggle={setSidebarCollapsed} />
+        <div className={`d-flex align-items-center justify-content-center main-content ${sidebarCollapsed ? 'collapsed' : ''}`} style={{height: '16rem'}}>
           <div className="spinner-border text-primary" style={{width: '4rem', height: '4rem'}} role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
@@ -116,9 +117,9 @@ const PermissionManagement = () => {
 
   return (
     <div className="min-vh-100 bg-gradient-primary">
-      <Navigation />
+      <Navigation onToggle={setSidebarCollapsed} />
       
-      <div className="container-fluid py-4">
+      <div className={`container-fluid py-4 main-content ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="row">
           <div className="col-12">
             <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between mb-4">

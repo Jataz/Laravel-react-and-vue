@@ -240,10 +240,12 @@ body {
 /* Sidebar styles */
 .sidebar-expanded {
   width: 16rem;
+  transition: width 0.3s ease;
 }
 
 .sidebar-collapsed {
   width: 4rem;
+  transition: width 0.3s ease;
 }
 
 .sidebar-gradient {
@@ -256,6 +258,7 @@ body {
 .main-content {
   margin-left: 16rem;
   transition: margin-left 0.3s ease;
+  min-height: 100vh;
 }
 
 .main-content.collapsed {
@@ -264,6 +267,48 @@ body {
 
 .hover-bg-light:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Additional utility classes */
+.hover-lift:hover {
+  transform: translateY(-1px);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.transition-all {
+  transition: all 0.2s ease;
+}
+
+.glass-card {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.primary-gradient {
+  background: var(--primary-gradient);
+}
+
+.secondary-gradient {
+  background: var(--secondary-gradient);
+}
+
+.success-gradient {
+  background: var(--success-gradient);
+}
+
+.primary-bg-gradient {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+}
+
+.success-bg-gradient {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+}
+
+.secondary-bg-gradient {
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.1) 0%, rgba(107, 114, 128, 0.05) 100%);
 }
 
 /* Print Styles */

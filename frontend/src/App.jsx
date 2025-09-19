@@ -50,7 +50,7 @@ const AppRoutes = () => {
       <Route
         path="/users"
         element={
-          <ProtectedRoute requiredPermission="manage_users">
+          <ProtectedRoute requiredPermission="view users">
             <UserManagement />
           </ProtectedRoute>
         }
@@ -58,7 +58,7 @@ const AppRoutes = () => {
       <Route
         path="/roles"
         element={
-          <ProtectedRoute requiredPermission="manage_roles">
+          <ProtectedRoute requiredPermission="view roles">
             <RoleManagement />
           </ProtectedRoute>
         }
@@ -66,7 +66,7 @@ const AppRoutes = () => {
       <Route
         path="/permissions"
         element={
-          <ProtectedRoute requiredPermission="manage_permissions">
+          <ProtectedRoute requiredPermission="view permissions">
             <PermissionManagement />
           </ProtectedRoute>
         }

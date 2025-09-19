@@ -21,6 +21,7 @@ const UserManagement = () => {
   const [error, setError] = useState('');
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -130,8 +131,8 @@ const UserManagement = () => {
   if (loading) {
     return (
       <div className="min-vh-100 bg-gradient-primary">
-        <Navigation />
-        <div className="container-fluid py-4">
+        <Navigation onToggle={setSidebarCollapsed} />
+        <div className={`container-fluid py-4 main-content ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <div className="row justify-content-center">
             <div className="col-12 col-xl-10">
               {/* Header Skeleton */}
@@ -179,9 +180,9 @@ const UserManagement = () => {
 
   return (
     <div className="min-vh-100 bg-gradient-primary">
-      <Navigation />
+      <Navigation onToggle={setSidebarCollapsed} />
       
-      <div className="container-fluid py-4">
+      <div className={`container-fluid py-4 main-content ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="row justify-content-center">
           <div className="col-12 col-xl-10">
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start mb-4">

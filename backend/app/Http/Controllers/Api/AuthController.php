@@ -70,14 +70,14 @@ class AuthController extends Controller
             ], 422);
         }
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (!Auth::guard('web')->attempt($request->only('email', 'password'))) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid credentials'
             ], 401);
         }
 
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

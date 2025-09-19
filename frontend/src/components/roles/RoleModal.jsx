@@ -55,7 +55,7 @@ const RoleModal = ({ role, permissions, onClose, onSave }) => {
       const roleData = {
         name: formData.name,
         description: formData.description,
-        permission_ids: formData.permission_ids,
+        permissions: formData.permission_ids,
       };
 
       if (role) {

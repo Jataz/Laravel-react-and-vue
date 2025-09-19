@@ -42,7 +42,7 @@ class PermissionController extends Controller
 
         $permission = Permission::create([
             'name' => $request->name,
-            'guard_name' => $request->guard_name ?? 'web'
+            'guard_name' => $request->guard_name ?? 'sanctum'
         ]);
 
         return response()->json([

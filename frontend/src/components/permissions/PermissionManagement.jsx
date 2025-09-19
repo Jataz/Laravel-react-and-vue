@@ -88,7 +88,7 @@ const PermissionManagement = () => {
     (permission.description && permission.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  if (!hasPermission('manage_permissions')) {
+  if (!hasPermission('view permissions')) {
     return (
       <div className="min-vh-100 bg-light d-flex align-items-center justify-content-center">
         <div className="text-center">

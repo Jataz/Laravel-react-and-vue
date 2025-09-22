@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { rolesAPI } from '../../services/api';
-import { XMarkIcon, ShieldCheckIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import {
+  UserGroupIcon,
+  ShieldCheckIcon,
+  DocumentTextIcon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
 
 const RoleModal = ({ role, permissions, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -23,28 +28,26 @@ const RoleModal = ({ role, permissions, onClose, onSave }) => {
   }, [role]);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    if (type === 'checkbox' && name === 'permission_ids') {
-      const permissionId = parseInt(value);
-      setFormData(prev => ({
-        ...prev,
-        permission_ids: checked
-          ? [...prev.permission_ids, permissionId]
-          : prev.permission_ids.filter(id => id !== permissionId)
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
     
     // Clear errors when user starts typing
     if (error) setError('');
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
+  };
+
+  const handlePermissionChange = (permissionId) => {
+    setFormData(prev => ({
+      ...prev,
+      permission_ids: prev.permission_ids.includes(permissionId)
+        ? prev.permission_ids.filter(id => id !== permissionId)
+        : [...prev.permission_ids, permissionId]
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -81,156 +84,163 @@ const RoleModal = ({ role, permissions, onClose, onSave }) => {
   };
 
   const toggleAllPermissions = () => {
-    if (formData.permission_ids.length === permissions.length) {
-      // Deselect all
-      setFormData(prev => ({ ...prev, permission_ids: [] }));
-    } else {
-      // Select all
-      setFormData(prev => ({ 
-        ...prev, 
-        permission_ids: permissions.map(p => p.id) 
-      }));
-    }
+    const allPermissionIds = permissions.map(p => p.id);
+    const allSelected = allPermissionIds.every(id => formData.permission_ids.includes(id));
+    
+    setFormData(prev => ({
+      ...prev,
+      permission_ids: allSelected ? [] : allPermissionIds
+    }));
   };
 
+  const allSelected = permissions.length > 0 && permissions.every(p => formData.permission_ids.includes(p.id));
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center">
-            <div className="rounded-lg bg-blue-100 p-2 mr-3">
-              <UserGroupIcon className="w-6 h-6 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {role ? 'Edit Role' : 'Create Role'}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <XMarkIcon className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Name Field */}
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Role Name
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <ShieldCheckIcon className="h-5 w-5 text-gray-400" />
+    <div className="modal show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0, 0, 0, 0.5)'}}>
+      <div className="modal-dialog modal-dialog-centered modal-lg">
+        <div className="modal-content shadow-lg border-0" style={{borderRadius: '1rem'}}>
+          <div className="modal-header border-0 pb-0">
+            <div className="d-flex align-items-center">
+              <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3" style={{width: '3rem', height: '3rem'}}>
+                <UserGroupIcon style={{width: '1.5rem', height: '1.5rem'}} className="text-primary" />
               </div>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.name ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Enter role name"
-                required
-              />
+              <h5 className="modal-title fw-semibold text-dark">
+                {role ? 'Edit Role' : 'Create Role'}
+              </h5>
             </div>
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600">{errors.name[0]}</p>
-            )}
+            <button
+              type="button"
+              className="btn-close"
+              onClick={onClose}
+            ></button>
           </div>
 
-          {/* Description Field */}
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={3}
-              className={`block w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
-                errors.description ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="Enter role description"
-            />
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-600">{errors.description[0]}</p>
+          <div className="modal-body">
+            {error && (
+              <div className="alert alert-danger border-0 shadow-sm mb-4" style={{borderRadius: '0.75rem'}}>
+                <div className="d-flex align-items-center">
+                  <XMarkIcon style={{width: '1.25rem', height: '1.25rem'}} className="text-danger me-2" />
+                  <span className="text-danger fw-medium">{error}</span>
+                </div>
+              </div>
             )}
-          </div>
 
-          {/* Permissions Field */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Permissions
-              </label>
-              <button
-                type="button"
-                onClick={toggleAllPermissions}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                {formData.permission_ids.length === permissions.length ? 'Deselect All' : 'Select All'}
-              </button>
-            </div>
-            <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-4 space-y-2">
-              {permissions.map((permission) => (
-                <label key={permission.id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="permission_ids"
-                    value={permission.id}
-                    checked={formData.permission_ids.includes(permission.id)}
-                    onChange={handleChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <span className="ml-3 text-sm text-gray-700">{permission.name}</span>
+            <form id="roleForm" onSubmit={handleSubmit}>
+              {/* Name Field */}
+              <div className="mb-4">
+                <label htmlFor="name" className="form-label fw-medium text-dark">
+                  Role Name
                 </label>
-              ))}
-              {permissions.length === 0 && (
-                <p className="text-sm text-gray-500">No permissions available</p>
-              )}
-            </div>
-            {errors.permission_ids && (
-              <p className="mt-1 text-sm text-red-600">{errors.permission_ids[0]}</p>
-            )}
+                <div className="position-relative">
+                  <ShieldCheckIcon 
+                    style={{width: '1.25rem', height: '1.25rem', position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', zIndex: 10}} 
+                    className="text-muted"
+                  />
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className={`form-control form-control-lg ps-5 ${errors.name ? 'is-invalid' : ''}`}
+                    style={{borderRadius: '0.75rem'}}
+                    placeholder="Enter role name"
+                    required
+                  />
+                  {errors.name && (
+                    <div className="invalid-feedback">{errors.name[0]}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Description Field */}
+              <div className="mb-4">
+                <label htmlFor="description" className="form-label fw-medium text-dark">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={3}
+                  className={`form-control ${errors.description ? 'is-invalid' : ''}`}
+                  style={{borderRadius: '0.75rem'}}
+                  placeholder="Enter role description"
+                />
+                {errors.description && (
+                  <div className="invalid-feedback">{errors.description[0]}</div>
+                )}
+              </div>
+
+              {/* Permissions Field */}
+              <div className="mb-4">
+                <div className="d-flex align-items-center justify-content-between mb-3">
+                  <label className="form-label fw-medium text-dark mb-0">
+                    Permissions
+                  </label>
+                  <button
+                     type="button"
+                     onClick={toggleAllPermissions}
+                     className="btn btn-link btn-sm text-primary text-decoration-none fw-medium p-0"
+                   >
+                     {allSelected ? 'Deselect All' : 'Select All'}
+                   </button>
+                </div>
+                <div className="border rounded-3 p-3" style={{maxHeight: '12rem', overflowY: 'auto', backgroundColor: '#f8f9fa'}}>
+                  {permissions.map((permission) => (
+                    <div key={permission.id} className="form-check mb-2">
+                       <input
+                         type="checkbox"
+                         id={`permission-${permission.id}`}
+                         checked={formData.permission_ids.includes(permission.id)}
+                         onChange={() => handlePermissionChange(permission.id)}
+                         className="form-check-input"
+                       />
+                       <label htmlFor={`permission-${permission.id}`} className="form-check-label text-dark">
+                         {permission.name}
+                       </label>
+                     </div>
+                  ))}
+                  {permissions.length === 0 && (
+                    <p className="text-muted small">No permissions available</p>
+                  )}
+                </div>
+                {errors.permission_ids && (
+                  <div className="text-danger small mt-2">{errors.permission_ids[0]}</div>
+                )}
+              </div>
+            </form>
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="modal-footer border-0 pt-0">
             <button
               type="button"
               onClick={onClose}
-              disabled={submitting}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+              className="btn btn-outline-secondary me-2"
+              style={{borderRadius: '50px'}}
             >
               Cancel
             </button>
             <button
               type="submit"
+              form="roleForm"
               disabled={submitting}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="btn btn-primary"
+              style={{borderRadius: '50px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none'}}
             >
               {submitting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  {role ? 'Updating...' : 'Creating...'}
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Saving...
                 </>
               ) : (
                 role ? 'Update Role' : 'Create Role'
               )}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

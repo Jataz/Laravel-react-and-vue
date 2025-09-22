@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { usersAPI, rolesAPI } from '../../services/api';
 import UserModal from './UserModal';
+import Navigation from '../layout/Navigation';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   PlusIcon,
   PencilIcon,
@@ -8,17 +10,20 @@ import {
   MagnifyingGlassIcon,
   UserIcon,
   ExclamationTriangleIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 const UserManagement = () => {
+  const { hasPermission } = useAuth();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [error, setError] = useState('');
-  const [deletingUserId, setDeletingUserId] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -60,21 +65,21 @@ const UserManagement = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) {
-      return;
-    }
+  const handleDeleteUser = (userId) => {
+    setUserToDelete(userId);
+    setIsDeleteModalOpen(true);
+  };
 
+  const confirmDelete = async () => {
     try {
-      setDeletingUserId(userId);
-      await usersAPI.delete(userId);
-      setUsers(users.filter(user => user.id !== userId));
+      await usersAPI.delete(userToDelete);
+      setUsers(users.filter(user => user.id !== userToDelete));
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
       setError('');
     } catch (error) {
       console.error('Error deleting user:', error);
       setError('Failed to delete user. Please try again.');
-    } finally {
-      setDeletingUserId(null);
     }
   };
 
@@ -97,163 +102,158 @@ const UserManagement = () => {
     user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start mb-6">
-        <div className="mb-4 sm:mb-0">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Users
-          </h1>
-          <p className="text-gray-600">
-            Manage user accounts, roles, and permissions.
+  if (!hasPermission('view users')) {
+    return (
+      <div className="min-vh-100 bg-light d-flex align-items-center justify-content-center">
+        <div className="text-center">
+          <ShieldCheckIcon style={{width: '3rem', height: '3rem'}} className="text-muted mx-auto mb-3" />
+          <h3 className="fw-medium text-dark mb-2">Access Denied</h3>
+          <p className="text-muted small">
+            You don't have permission to manage users.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleCreateUser}
-          disabled={actionLoading}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
-        >
-          <PlusIcon className="w-4 h-4" />
-          Add User
-        </button>
       </div>
+    );
+  }
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
-          <ExclamationTriangleIcon className="w-5 h-5 flex-shrink-0" />
-          {error}
-        </div>
-      )}
-
-      {/* Search */}
-      <div className="mb-6">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Users Table */}
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Roles
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-sm font-medium text-blue-600">
-                            {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.name || 'Unknown'}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {user.email || 'No email'}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-wrap gap-1">
-                      {user.roles?.map((role) => (
-                        <span
-                          key={role.id}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                        >
-                          {role.name}
-                        </span>
-                      )) || (
-                        <span className="text-sm text-gray-400">No roles</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => handleEditUser(user)}
-                        disabled={deletingUserId === user.id || actionLoading}
-                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50 p-1"
-                        title="Edit user"
-                      >
-                        <PencilIcon className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user.id)}
-                        disabled={deletingUserId === user.id || actionLoading}
-                        className="text-red-600 hover:text-red-900 disabled:opacity-50 p-1"
-                        title="Delete user"
-                      >
-                        {deletingUserId === user.id ? (
-                          <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <TrashIcon className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-12">
-              <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
-                {searchTerm ? (
-                  <MagnifyingGlassIcon className="w-12 h-12" />
-                ) : (
-                  <UserIcon className="w-12 h-12" />
-                )}
+  return (
+    <div className="min-vh-100 bg-gradient-primary">
+      <Navigation onToggle={setSidebarCollapsed} />
+      
+      <div className={`container-fluid py-4 main-content ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="row">
+          <div className="col-12">
+            <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between mb-4">
+              <div className="flex-grow-1">
+                <h1 className="display-5 fw-bold text-gradient mb-2">Users</h1>
+                <p className="text-muted small">
+                  Manage user accounts, roles, and permissions.
+                </p>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-              <p className="text-gray-500 mb-4">
-                {searchTerm ? 'Try adjusting your search terms.' : 'Get started by adding your first user.'}
-              </p>
-              {!searchTerm && (
+              <div className="mt-3 mt-sm-0">
                 <button
+                  type="button"
                   onClick={handleCreateUser}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto transition-colors"
+                  className="btn btn-primary btn-lg d-inline-flex align-items-center shadow-lg"
                 >
-                  <PlusIcon className="w-4 h-4" />
-                  Add your first user
+                  <PlusIcon style={{width: '1.25rem', height: '1.25rem'}} className="me-2" />
+                  Add User
                 </button>
-              )}
+              </div>
             </div>
-          )}
+
+            {error && (
+              <div className="alert alert-danger shadow-sm" style={{borderRadius: '0.75rem'}}>
+                {error}
+              </div>
+            )}
+
+            {/* Search */}
+            <div className="mb-4">
+              <div className="position-relative">
+                <div className="position-absolute top-50 start-0 translate-middle-y ps-3">
+                  <MagnifyingGlassIcon style={{width: '1.25rem', height: '1.25rem'}} className="text-muted" />
+                </div>
+                <input
+                  type="text"
+                  className="form-control form-control-lg ps-5 shadow-sm"
+                  style={{borderRadius: '0.75rem'}}
+                  placeholder="Search users..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Users Table */}
+            <div className="card shadow-lg border-0 bg-white bg-opacity-90" style={{borderRadius: '1rem'}}>
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <thead className="bg-light">
+                    <tr>
+                      <th className="px-4 py-3 text-uppercase fw-semibold text-muted small border-0">
+                        User
+                      </th>
+                      <th className="px-4 py-3 text-uppercase fw-semibold text-muted small border-0">
+                        Roles
+                      </th>
+                      <th className="px-4 py-3 text-uppercase fw-semibold text-muted small border-0">
+                        Created
+                      </th>
+                      <th className="px-4 py-3 border-0"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map((user) => (
+                      <tr key={user.id} className="border-0">
+                        <td className="px-4 py-4 border-0">
+                          <div className="d-flex align-items-center">
+                            <div className="rounded-circle bg-gradient-primary d-flex align-items-center justify-content-center shadow-sm me-3" style={{width: '2.5rem', height: '2.5rem'}}>
+                              <span className="text-white fw-semibold">
+                                {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="fw-semibold text-dark">{user.name || 'Unknown'}</div>
+                              <div className="text-muted small">{user.email || 'No email'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 border-0">
+                          <div className="d-flex flex-wrap gap-1">
+                            {user.roles?.map((role) => (
+                              <span
+                                key={role.id}
+                                className="badge bg-primary-subtle text-primary border border-primary-subtle"
+                                style={{borderRadius: '1rem'}}
+                              >
+                                {role.name}
+                              </span>
+                            )) || (
+                              <span className="text-muted small">No roles</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 border-0 text-muted small">
+                          {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
+                        </td>
+                        <td className="px-4 py-4 border-0">
+                          <div className="d-flex justify-content-end gap-2">
+                            <button
+                              onClick={() => handleEditUser(user)}
+                              className="btn btn-sm btn-outline-primary border-0 hover-scale"
+                              title="Edit user"
+                            >
+                              <PencilIcon style={{width: '1rem', height: '1rem'}} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="btn btn-sm btn-outline-danger border-0 hover-scale"
+                              title="Delete user"
+                            >
+                              <TrashIcon style={{width: '1rem', height: '1rem'}} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {filteredUsers.length === 0 && (
+              <div className="text-center py-5 fade-in">
+                <div className="mx-auto rounded-circle bg-light d-flex align-items-center justify-content-center mb-3" style={{width: '4rem', height: '4rem'}}>
+                  <UserIcon style={{width: '2rem', height: '2rem'}} className="text-muted" />
+                </div>
+                <h5 className="fw-medium text-dark mb-2">No users found</h5>
+                <p className="text-muted small">
+                  {searchTerm ? 'Try adjusting your search terms.' : 'Get started by creating your first user.'}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -264,6 +264,38 @@ const UserManagement = () => {
           onClose={() => setIsModalOpen(false)}
           onSave={handleUserSaved}
         />
+      )}
+
+      {isDeleteModalOpen && (
+        <div className="modal show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0, 0, 0, 0.5)'}}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content shadow-lg border-0" style={{borderRadius: '1rem'}}>
+              <div className="modal-body text-center p-4">
+                <div className="mx-auto d-flex align-items-center justify-content-center rounded-circle bg-danger bg-opacity-10 mb-4" style={{width: '3rem', height: '3rem'}}>
+                  <ExclamationTriangleIcon style={{width: '1.5rem', height: '1.5rem'}} className="text-danger" />
+                </div>
+                <h5 className="fw-semibold text-dark mb-2">Delete User</h5>
+                <p className="text-muted small mb-4">
+                  Are you sure you want to delete this user? This action cannot be undone.
+                </p>
+                <div className="d-flex justify-content-center gap-3">
+                  <button
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="btn btn-danger"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

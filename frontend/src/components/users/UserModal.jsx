@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usersAPI } from '../../services/api';
-import { XMarkIcon, UserIcon, EnvelopeIcon, LockClosedIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, UserIcon, EnvelopeIcon, LockClosedIcon, ShieldCheckIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 const UserModal = ({ user, roles, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -103,7 +103,7 @@ const UserModal = ({ user, roles, onClose, onSave }) => {
   };
 
   return (
-    <div className="modal show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0, 0, 0, 0.5)'}}>
+    <div className="modal show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0, 0, 0, 0.5)', zIndex: 1050}}>
       <div className="modal-dialog modal-dialog-centered modal-lg">
         <div className="modal-content shadow-lg border-0" style={{borderRadius: '1rem'}}>
           <div className="modal-header border-0 pb-0">

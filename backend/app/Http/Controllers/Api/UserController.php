@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -16,7 +18,13 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with('roles.permissions')->get();
+        // Cache users with roles and permissions for 30 minutes
+        $cacheKey = 'users_with_roles_permissions';
+        $users = Cache::remember($cacheKey, 1800, function () {
+            return User::with('roles.permissions')->get();
+        });
+
+        Log::info('Users list retrieved', ['cache_key' => $cacheKey, 'count' => $users->count()]);
 
         return response()->json([
             'success' => true,
@@ -29,7 +37,11 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        $user = User::with('roles.permissions')->find($id);
+        // Cache individual user with roles and permissions for 30 minutes
+        $cacheKey = "user_with_roles_permissions:{$id}";
+        $user = Cache::remember($cacheKey, 1800, function () use ($id) {
+            return User::with('roles.permissions')->find($id);
+        });
 
         if (!$user) {
             return response()->json([
@@ -37,6 +49,8 @@ class UserController extends Controller
                 'message' => 'User not found'
             ], 404);
         }
+
+        Log::info('User details retrieved', ['user_id' => $id, 'cache_key' => $cacheKey]);
 
         return response()->json([
             'success' => true,
@@ -74,6 +88,13 @@ class UserController extends Controller
         $roles = Role::whereIn('id', $request->roles)->get();
         $user->syncRoles($roles);
 
+        // Clear related caches
+        Cache::forget('users_with_roles_permissions');
+        Cache::forget("user_with_roles_permissions:{$id}");
+        Cache::forget("user_profile:{$id}");
+
+        Log::info('User roles assigned', ['user_id' => $id, 'roles' => $request->roles]);
+
         return response()->json([
             'success' => true,
             'message' => 'Roles assigned successfully',
@@ -110,6 +131,13 @@ class UserController extends Controller
 
         $permissions = Permission::whereIn('id', $request->permissions)->get();
         $user->syncPermissions($permissions);
+
+        // Clear related caches
+        Cache::forget('users_with_roles_permissions');
+        Cache::forget("user_with_roles_permissions:{$id}");
+        Cache::forget("user_profile:{$id}");
+
+        Log::info('User permissions assigned', ['user_id' => $id, 'permissions' => $request->permissions]);
 
         return response()->json([
             'success' => true,

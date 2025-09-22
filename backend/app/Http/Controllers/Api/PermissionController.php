@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Permission;
 
 class PermissionController extends Controller
@@ -14,7 +16,10 @@ class PermissionController extends Controller
      */
     public function index()
     {
-        $permissions = Permission::all();
+        // Cache permissions for 30 minutes
+        $permissions = Cache::remember('all_permissions', 1800, function () {
+            return Permission::all();
+        });
 
         return response()->json([
             'success' => true,
@@ -43,6 +48,16 @@ class PermissionController extends Controller
         $permission = Permission::create([
             'name' => $request->name,
             'guard_name' => $request->guard_name ?? 'sanctum'
+        ]);
+
+        // Clear permissions cache when new permission is created
+        Cache::forget('all_permissions');
+        
+        // Log permission creation
+        Log::info('Permission created', [
+            'permission_id' => $permission->id,
+            'permission_name' => $permission->name,
+            'created_by' => auth()->id()
         ]);
 
         return response()->json([

@@ -16,7 +16,6 @@ import {
 const PermissionManagement = () => {
   const { hasPermission } = useAuth();
   const [permissions, setPermissions] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,14 +30,11 @@ const PermissionManagement = () => {
 
   const fetchPermissions = async () => {
     try {
-      setLoading(true);
       const response = await permissionsAPI.getAll();
       setPermissions(response.data.data);
     } catch (error) {
       setError('Failed to fetch permissions');
       console.error('Error fetching permissions:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -97,19 +93,6 @@ const PermissionManagement = () => {
           <p className="text-muted small">
             You don't have permission to manage permissions.
           </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-vh-100 bg-gradient-primary">
-        <Navigation onToggle={setSidebarCollapsed} />
-        <div className={`d-flex align-items-center justify-content-center main-content ${sidebarCollapsed ? 'collapsed' : ''}`} style={{height: '16rem'}}>
-          <div className="spinner-border text-primary" style={{width: '4rem', height: '4rem'}} role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
         </div>
       </div>
     );

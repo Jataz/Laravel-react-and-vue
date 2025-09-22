@@ -7,7 +7,7 @@ const PermissionModal = ({ permission, onClose, onSave }) => {
     name: '',
     description: '',
   });
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
 
@@ -32,7 +32,7 @@ const PermissionModal = ({ permission, onClose, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setError('');
     setErrors({});
 
@@ -58,7 +58,7 @@ const PermissionModal = ({ permission, onClose, onSave }) => {
       setError(message);
       setErrors(validationErrors);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -157,16 +157,16 @@ const PermissionModal = ({ permission, onClose, onSave }) => {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={submitting}
               onClick={handleSubmit}
               className="btn btn-primary shadow-lg"
             >
-              {loading ? (
+              {submitting ? (
                 <>
                   <div className="spinner-border spinner-border-sm me-2" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">Submitting...</span>
                   </div>
-                  Loading...
+                  Submitting...
                 </>
               ) : (
                 <span>{permission ? 'Update Permission' : 'Create Permission'}</span>

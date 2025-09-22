@@ -10,7 +10,7 @@ const UserModal = ({ user, roles, onClose, onSave }) => {
     password_confirmation: '',
     role_ids: [],
   });
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
 
@@ -44,13 +44,16 @@ const UserModal = ({ user, roles, onClose, onSave }) => {
       }));
     }
     
-    setError('');
-    setErrors({});
+    // Clear errors when user starts typing
+    if (error) setError('');
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setError('');
     setErrors({});
 
@@ -58,13 +61,12 @@ const UserModal = ({ user, roles, onClose, onSave }) => {
     if (!user || formData.password) {
       if (formData.password !== formData.password_confirmation) {
         setError('Passwords do not match');
-        setLoading(false);
+        setSubmitting(false);
         return;
       }
     }
 
     try {
-      let response;
       const userData = {
         name: formData.name,
         email: formData.email,
@@ -77,6 +79,7 @@ const UserModal = ({ user, roles, onClose, onSave }) => {
         userData.password_confirmation = formData.password_confirmation;
       }
 
+      let response;
       if (user) {
         // Update existing user
         response = await usersAPI.update(user.id, userData);
@@ -92,210 +95,192 @@ const UserModal = ({ user, roles, onClose, onSave }) => {
       setError(message);
       setErrors(validationErrors);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="modal show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0, 0, 0, 0.5)'}}>
-      <div className="modal-dialog modal-dialog-centered modal-lg">
-        <div className="modal-content shadow-lg border-0" style={{borderRadius: '1rem', backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)'}}>
-          <div className="modal-header bg-gradient-primary border-0 text-white" style={{borderRadius: '1rem 1rem 0 0'}}>
-            <div className="d-flex align-items-center">
-              <div className="rounded-circle bg-white bg-opacity-20 d-flex align-items-center justify-content-center me-3" style={{width: '2.5rem', height: '2.5rem'}}>
-                <UserIcon style={{width: '1.25rem', height: '1.25rem'}} className="text-white" />
-              </div>
-              <h5 className="modal-title fw-semibold mb-0">
-                {user ? 'Edit User' : 'Create User'}
-              </h5>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {user ? 'Edit User' : 'Create User'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {error}
             </div>
-            <button
-              type="button"
-              className="btn-close btn-close-white"
-              onClick={onClose}
-              aria-label="Close"
-            ></button>
-          </div>
+          )}
 
-          <div className="modal-body p-4">
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center mb-4" style={{borderRadius: '0.75rem'}}>
-                <div className="rounded-circle bg-danger me-2" style={{width: '0.5rem', height: '0.5rem'}}></div>
-                <span className="fw-medium">{error}</span>
+          {/* Name Field */}
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Name
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <UserIcon className="h-5 w-5 text-gray-400" />
               </div>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.name ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter user name"
+                required
+              />
+            </div>
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name[0]}</p>
             )}
-
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label htmlFor="name" className="form-label fw-semibold text-dark">
-                  Full Name
-                </label>
-                <div className="input-group">
-                  <span className="input-group-text bg-light border-end-0" style={{borderRadius: '0.75rem 0 0 0.75rem'}}>
-                    <UserIcon style={{width: '1.25rem', height: '1.25rem'}} className="text-muted" />
-                  </span>
-                  <input
-                    type="text"
-                    name="name"
-                    id="name"
-                    required
-                    className="form-control border-start-0 shadow-sm"
-                    style={{borderRadius: '0 0.75rem 0.75rem 0', backgroundColor: 'rgba(255, 255, 255, 0.8)'}}
-                    placeholder="Enter full name"
-                    value={formData.name}
-                    onChange={handleChange}
-                  />
-                </div>
-                {errors.name && (
-                  <div className="text-danger small mt-2 d-flex align-items-center">
-                    <div className="rounded-circle bg-danger me-2" style={{width: '0.25rem', height: '0.25rem'}}></div>
-                    {errors.name[0]}
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-4">
-                <label htmlFor="email" className="form-label fw-semibold text-dark">
-                  Email Address
-                </label>
-                <div className="input-group">
-                  <span className="input-group-text bg-light border-end-0" style={{borderRadius: '0.75rem 0 0 0.75rem'}}>
-                    <EnvelopeIcon style={{width: '1.25rem', height: '1.25rem'}} className="text-muted" />
-                  </span>
-                  <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    required
-                    className="form-control border-start-0 shadow-sm"
-                    style={{borderRadius: '0 0.75rem 0.75rem 0', backgroundColor: 'rgba(255, 255, 255, 0.8)'}}
-                    placeholder="Enter email address"
-                    value={formData.email}
-                    onChange={handleChange}
-                  />
-                </div>
-                {errors.email && (
-                  <div className="text-danger small mt-2 d-flex align-items-center">
-                    <div className="rounded-circle bg-danger me-2" style={{width: '0.25rem', height: '0.25rem'}}></div>
-                    {errors.email[0]}
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-4">
-                <label htmlFor="password" className="form-label fw-semibold text-dark">
-                  Password {user && <span className="text-muted fw-normal">(leave blank to keep current)</span>}
-                </label>
-                <div className="input-group">
-                  <span className="input-group-text bg-light border-end-0" style={{borderRadius: '0.75rem 0 0 0.75rem'}}>
-                    <LockClosedIcon style={{width: '1.25rem', height: '1.25rem'}} className="text-muted" />
-                  </span>
-                  <input
-                    type="password"
-                    name="password"
-                    id="password"
-                    required={!user}
-                    className="form-control border-start-0 shadow-sm"
-                    style={{borderRadius: '0 0.75rem 0.75rem 0', backgroundColor: 'rgba(255, 255, 255, 0.8)'}}
-                    placeholder="Enter password"
-                    value={formData.password}
-                    onChange={handleChange}
-                  />
-                </div>
-                {errors.password && (
-                  <div className="text-danger small mt-2 d-flex align-items-center">
-                    <div className="rounded-circle bg-danger me-2" style={{width: '0.25rem', height: '0.25rem'}}></div>
-                    {errors.password[0]}
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-4">
-                <label htmlFor="password_confirmation" className="form-label fw-semibold text-dark">
-                  Confirm Password
-                </label>
-                <div className="input-group">
-                  <span className="input-group-text bg-light border-end-0" style={{borderRadius: '0.75rem 0 0 0.75rem'}}>
-                    <LockClosedIcon style={{width: '1.25rem', height: '1.25rem'}} className="text-muted" />
-                  </span>
-                  <input
-                    type="password"
-                    name="password_confirmation"
-                    id="password_confirmation"
-                    required={!user || formData.password}
-                    className="form-control border-start-0 shadow-sm"
-                    style={{borderRadius: '0 0.75rem 0.75rem 0', backgroundColor: 'rgba(255, 255, 255, 0.8)'}}
-                    placeholder="Confirm password"
-                    value={formData.password_confirmation}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="form-label fw-semibold text-dark">
-                  <div className="d-flex align-items-center">
-                    <ShieldCheckIcon style={{width: '1rem', height: '1rem'}} className="text-muted me-2" />
-                    <span>Assign Roles</span>
-                  </div>
-                </label>
-                <div className="bg-light border rounded-3 p-3" style={{maxHeight: '10rem', overflowY: 'auto'}}>
-                  {roles.map((role) => (
-                    <div key={role.id} className="form-check p-2 rounded hover-bg-white">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id={`role-${role.id}`}
-                        name="role_ids"
-                        value={role.id}
-                        checked={formData.role_ids.includes(role.id)}
-                        onChange={handleChange}
-                      />
-                      <label className="form-check-label fw-medium text-dark" htmlFor={`role-${role.id}`}>
-                        {role.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-                {errors.role_ids && (
-                  <div className="text-danger small mt-2 d-flex align-items-center">
-                    <div className="rounded-circle bg-danger me-2" style={{width: '0.25rem', height: '0.25rem'}}></div>
-                    {errors.role_ids[0]}
-                  </div>
-                )}
-              </div>
-            </form>
           </div>
 
-          <div className="modal-footer border-top bg-light" style={{borderRadius: '0 0 1rem 1rem'}}>
+          {/* Email Field */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.email ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter email address"
+                required
+              />
+            </div>
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email[0]}</p>
+            )}
+          </div>
+
+          {/* Password Field */}
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              Password {user && <span className="text-gray-500">(leave blank to keep current)</span>}
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <LockClosedIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.password ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder={user ? "Enter new password" : "Enter password"}
+                required={!user}
+              />
+            </div>
+            {errors.password && (
+              <p className="mt-1 text-sm text-red-600">{errors.password[0]}</p>
+            )}
+          </div>
+
+          {/* Confirm Password Field */}
+          {(!user || formData.password) && (
+            <div>
+              <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="password"
+                  id="password_confirmation"
+                  name="password_confirmation"
+                  value={formData.password_confirmation}
+                  onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Confirm password"
+                  required={!user || formData.password}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Roles Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <ShieldCheckIcon className="w-4 h-4 inline mr-1" />
+              Roles
+            </label>
+            <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-3">
+              {roles.map((role) => (
+                <label key={role.id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="role_ids"
+                    value={role.id}
+                    checked={formData.role_ids.includes(role.id)}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">{role.name}</span>
+                </label>
+              ))}
+              {roles.length === 0 && (
+                <p className="text-sm text-gray-500">No roles available</p>
+              )}
+            </div>
+            {errors.role_ids && (
+              <p className="mt-1 text-sm text-red-600">{errors.role_ids[0]}</p>
+            )}
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
-              className="btn btn-secondary"
               onClick={onClose}
-              style={{borderRadius: '0.75rem'}}
+              disabled={submitting}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="btn btn-primary shadow-lg"
-              style={{borderRadius: '0.75rem'}}
-              onClick={handleSubmit}
+              disabled={submitting}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              {loading ? (
-                <div className="d-flex align-items-center">
-                  <div className="spinner-border spinner-border-sm me-2" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                  </div>
-                  <span>Processing...</span>
-                </div>
+              {submitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  {user ? 'Updating...' : 'Creating...'}
+                </>
               ) : (
                 user ? 'Update User' : 'Create User'
               )}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

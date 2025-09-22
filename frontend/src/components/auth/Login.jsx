@@ -9,7 +9,7 @@ const Login = () => {
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const { login } = useAuth();
@@ -28,7 +28,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setError('');
 
     const result = await login(formData);
@@ -39,7 +39,7 @@ const Login = () => {
       setError(result.message);
     }
     
-    setLoading(false);
+    setSubmitting(false);
   };
 
   return (
@@ -143,12 +143,12 @@ const Login = () => {
                   <div className="d-grid">
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={submitting}
                       className="btn btn-primary py-3 fw-semibold rounded-3"
                     >
-                      {loading ? (
+                      {submitting ? (
                         <div className="spinner-border spinner-border-sm text-white" role="status">
-                          <span className="visually-hidden">Loading...</span>
+                          <span className="visually-hidden">Signing in...</span>
                         </div>
                       ) : (
                         <span>Sign In</span>

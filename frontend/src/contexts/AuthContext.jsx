@@ -12,23 +12,29 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  // Initialize user and token from localStorage immediately for instant auth
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
 
   useEffect(() => {
-    const initAuth = async () => {
+    const verifyAuth = async () => {
       const storedToken = localStorage.getItem('token');
       const storedUser = localStorage.getItem('user');
 
       if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        
-        // Verify token is still valid
+        // Verify token is still valid in background
         try {
           const response = await authAPI.profile();
-          setUser(response.data.data.user);
+          const freshUser = response.data.data.user;
+          
+          // Update user data if it changed
+          if (JSON.stringify(freshUser) !== JSON.stringify(user)) {
+            setUser(freshUser);
+            localStorage.setItem('user', JSON.stringify(freshUser));
+          }
         } catch (error) {
           // Token is invalid, clear storage
           localStorage.removeItem('token');
@@ -37,10 +43,12 @@ export const AuthProvider = ({ children }) => {
           setUser(null);
         }
       }
-      setLoading(false);
     };
 
-    initAuth();
+    // Only verify if we have stored credentials
+    if (token && user) {
+      verifyAuth();
+    }
   }, []);
 
   const login = async (credentials) => {
@@ -115,7 +123,6 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     token,
-    loading,
     login,
     register,
     logout,

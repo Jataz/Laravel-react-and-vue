@@ -19,31 +19,32 @@ const Dashboard = () => {
     roles: 0,
     permissions: 0,
   });
-  const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
       if (isAdmin()) {
         try {
-          const [usersResponse, rolesResponse, permissionsResponse] = await Promise.all([
+          // Use Promise.allSettled for better error handling and faster execution
+          const [usersResponse, rolesResponse, permissionsResponse] = await Promise.allSettled([
             usersAPI.getAll(),
             rolesAPI.getAll(),
             permissionsAPI.getAll(),
           ]);
 
           setStats({
-            users: usersResponse.data.data?.length || 0,
-            roles: rolesResponse.data.data?.length || 0,
-            permissions: permissionsResponse.data.data?.length || 0,
+            users: usersResponse.status === 'fulfilled' ? (usersResponse.value.data.data?.length || 0) : 0,
+            roles: rolesResponse.status === 'fulfilled' ? (rolesResponse.value.data.data?.length || 0) : 0,
+            permissions: permissionsResponse.status === 'fulfilled' ? (permissionsResponse.value.data.data?.length || 0) : 0,
           });
         } catch (error) {
           console.error('Error fetching stats:', error);
+          // Keep default values on error
         }
       }
-      setLoading(false);
     };
 
+    // Fetch data immediately without blocking UI
     fetchStats();
   }, [isAdmin]);
 
@@ -176,47 +177,37 @@ const Dashboard = () => {
                 </div>
               </div>
               
-              {loading ? (
-                <div className="d-flex justify-content-center align-items-center" style={{height: '8rem'}}>
-                  <div className="position-relative">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="row g-4 mb-4">
-                  {statCards.map((stat, index) => (
-                    <div key={stat.name} className="col-12 col-sm-6 col-lg-4">
-                      <div className="card glass-card border-0 rounded-4 shadow-lg hover-lift h-100">
-                        <div className={`position-absolute top-0 start-0 w-100 h-100 ${stat.bgGradient} opacity-50 rounded-4`}></div>
-                        <div className="card-body p-4 position-relative">
-                          <div className="d-flex align-items-center justify-content-between">
-                            <div className="flex-grow-1">
-                              <p className="small fw-medium text-muted text-uppercase mb-2">
-                                {stat.name}
-                              </p>
-                              <p className="display-6 fw-bold text-dark mb-2">
-                                {stat.value}
-                              </p>
-                              <div className="d-flex align-items-center">
-                                <ArrowTrendingUpIcon className="text-success me-1" style={{width: '1rem', height: '1rem'}} />
-                                <span className="small fw-medium text-success">
-                                  {stat.change}
-                                </span>
-                                <span className="small text-muted ms-1">vs last month</span>
-                              </div>
+              <div className="row g-4 mb-4">
+                {statCards.map((stat, index) => (
+                  <div key={stat.name} className="col-12 col-sm-6 col-lg-4">
+                    <div className="card glass-card border-0 rounded-4 shadow-lg hover-lift h-100">
+                      <div className={`position-absolute top-0 start-0 w-100 h-100 ${stat.bgGradient} opacity-50 rounded-4`}></div>
+                      <div className="card-body p-4 position-relative">
+                        <div className="d-flex align-items-center justify-content-between">
+                          <div className="flex-grow-1">
+                            <p className="small fw-medium text-muted text-uppercase mb-2">
+                              {stat.name}
+                            </p>
+                            <p className="display-6 fw-bold text-dark mb-2">
+                              {stat.value}
+                            </p>
+                            <div className="d-flex align-items-center">
+                              <ArrowTrendingUpIcon className="text-success me-1" style={{width: '1rem', height: '1rem'}} />
+                              <span className="small fw-medium text-success">
+                                {stat.change}
+                              </span>
+                              <span className="small text-muted ms-1">vs last month</span>
                             </div>
-                            <div className={`d-flex align-items-center justify-content-center ${stat.iconBg} rounded-3 shadow-sm hover-scale`} style={{width: '3rem', height: '3rem'}}>
-                              <stat.icon className="text-white" style={{width: '1.5rem', height: '1.5rem'}} />
-                            </div>
+                          </div>
+                          <div className={`d-flex align-items-center justify-content-center ${stat.iconBg} rounded-3 shadow-sm hover-scale`} style={{width: '3rem', height: '3rem'}}>
+                            <stat.icon className="text-white" style={{width: '1.5rem', height: '1.5rem'}} />
                           </div>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
             </>
           )}
 

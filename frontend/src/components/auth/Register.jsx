@@ -12,7 +12,7 @@ const Register = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
 
@@ -30,13 +30,13 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setError('');
     setErrors({});
 
     if (formData.password !== formData.password_confirmation) {
       setError('Passwords do not match');
-      setLoading(false);
+      setSubmitting(false);
       return;
     }
 
@@ -49,7 +49,7 @@ const Register = () => {
       setErrors(result.errors || {});
     }
     
-    setLoading(false);
+    setSubmitting(false);
   };
 
   return (
@@ -230,12 +230,12 @@ const Register = () => {
                   <div className="d-grid">
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={submitting}
                       className="btn btn-secondary py-3 fw-semibold rounded-3"
                     >
-                      {loading ? (
+                      {submitting ? (
                         <div className="spinner-border spinner-border-sm text-white" role="status">
-                          <span className="visually-hidden">Loading...</span>
+                          <span className="visually-hidden">Creating account...</span>
                         </div>
                       ) : (
                         <span>Create Account</span>

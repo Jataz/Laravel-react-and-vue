@@ -10,24 +10,7 @@ import RoleManagement from './components/roles/RoleManagement';
 import PermissionManagement from './components/permissions/PermissionManagement';
 
 const AppRoutes = () => {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-blue-200 rounded-full animate-pulse"></div>
-            <div className="absolute top-0 left-0 w-20 h-20 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
-          </div>
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Loading Application</h3>
-            <p className="text-sm text-gray-500">Please wait while we prepare your experience...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const { isAuthenticated } = useAuth();
 
   return (
     <Routes>

@@ -1,54 +1,67 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Navigation from './layout/Navigation';
 
-const ProtectedRoute = ({ children, requireAdmin = false, requiredPermission = null }) => {
-  const { isAuthenticated, loading, isAdmin, hasPermission } = useAuth();
-  const location = useLocation();
+const ProtectedRoute = ({ children, requiredPermission, requiredRole }) => {
+  const { isAuthenticated, hasPermission, hasRole } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-blue-200 rounded-full animate-pulse"></div>
-            <div className="absolute top-0 left-0 w-20 h-20 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
-          </div>
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Loading...</h3>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" replace />;
   }
 
-  if (requireAdmin && !isAdmin()) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-          <p className="text-gray-600">You don't have permission to access this page.</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Check for required permission
   if (requiredPermission && !hasPermission(requiredPermission)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-          <p className="text-gray-600">You don't have the required permission: {requiredPermission}</p>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md">
+            <div className="text-red-500 text-6xl mb-4">🚫</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-4">
+              You don't have permission to access this page.
+            </p>
+            <p className="text-sm text-gray-500">
+              Required permission: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{requiredPermission}</span>
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
-  return children;
+  // Check for required role
+  if (requiredRole && !hasRole(requiredRole)) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md">
+            <div className="text-red-500 text-6xl mb-4">🚫</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-4">
+              You don't have the required role to access this page.
+            </p>
+            <p className="text-sm text-gray-500">
+              Required role: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{requiredRole}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render the protected content with navigation
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <main>
+        {children}
+      </main>
+    </div>
+  );
 };
 
 export default ProtectedRoute;

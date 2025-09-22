@@ -13,7 +13,6 @@ import {
 const RoleManagement = () => {
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
@@ -21,28 +20,31 @@ const RoleManagement = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    fetchRoles();
-    fetchPermissions();
+    fetchData();
   }, []);
 
-  const fetchRoles = async () => {
+  const fetchData = async () => {
     try {
-      const response = await rolesAPI.getAll();
-      setRoles(response.data.data || []);
-    } catch (error) {
-      setError('Failed to fetch roles');
-      console.error('Error fetching roles:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const [rolesResponse, permissionsResponse] = await Promise.allSettled([
+        rolesAPI.getAll(),
+        permissionsAPI.getAll()
+      ]);
 
-  const fetchPermissions = async () => {
-    try {
-      const response = await permissionsAPI.getAll();
-      setPermissions(response.data.data || []);
+      if (rolesResponse.status === 'fulfilled') {
+        setRoles(rolesResponse.value.data.data || []);
+      } else {
+        console.error('Error fetching roles:', rolesResponse.reason);
+        setError('Failed to fetch roles');
+      }
+
+      if (permissionsResponse.status === 'fulfilled') {
+        setPermissions(permissionsResponse.value.data.data || []);
+      } else {
+        console.error('Error fetching permissions:', permissionsResponse.reason);
+      }
     } catch (error) {
-      console.error('Error fetching permissions:', error);
+      console.error('Error fetching data:', error);
+      setError('Failed to load data');
     }
   };
 
@@ -86,19 +88,6 @@ const RoleManagement = () => {
     role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (role.description && role.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
-  if (loading) {
-    return (
-      <div className="min-vh-100 bg-light">
-        <Navigation onToggle={setSidebarCollapsed} />
-        <div className={`d-flex align-items-center justify-content-center main-content ${sidebarCollapsed ? 'collapsed' : ''}`} style={{height: '16rem'}}>
-          <div className="spinner-border text-primary" style={{width: '8rem', height: '8rem'}} role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-vh-100 bg-gradient-primary">

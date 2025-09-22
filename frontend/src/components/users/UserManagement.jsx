@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { usersAPI, rolesAPI } from '../../services/api';
-import Navigation from '../layout/Navigation';
 import UserModal from './UserModal';
 import {
   PlusIcon,
@@ -14,40 +13,40 @@ import {
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [error, setError] = useState('');
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
-    fetchRoles();
+    fetchData();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
-      setLoading(true);
-      const response = await usersAPI.getAll();
-      setUsers(response.data.data || []);
-      setError('');
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      setError('Failed to load users. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+      // Fetch both users and roles concurrently
+      const [usersResponse, rolesResponse] = await Promise.allSettled([
+        usersAPI.getAll(),
+        rolesAPI.getAll()
+      ]);
 
-  const fetchRoles = async () => {
-    try {
-      const response = await rolesAPI.getAll();
-      setRoles(response.data.data || []);
+      if (usersResponse.status === 'fulfilled') {
+        setUsers(usersResponse.value.data.data || []);
+      } else {
+        console.error('Error fetching users:', usersResponse.reason);
+        setError('Failed to load users. Please try again.');
+      }
+
+      if (rolesResponse.status === 'fulfilled') {
+        setRoles(rolesResponse.value.data.data || []);
+      } else {
+        console.error('Error fetching roles:', rolesResponse.reason);
+      }
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      console.error('Error fetching data:', error);
+      setError('Failed to load data. Please try again.');
     }
   };
 
@@ -94,264 +93,167 @@ const UserManagement = () => {
   };
 
   const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Skeleton loader component
-  const SkeletonRow = () => (
-    <tr className="skeleton-loading">
-      <td className="px-3 py-4">
-        <div className="d-flex align-items-center">
-          <div className="skeleton-avatar rounded-circle me-3"></div>
-          <div>
-            <div className="skeleton-text mb-2" style={{ width: '120px' }}></div>
-            <div className="skeleton-text" style={{ width: '160px' }}></div>
-          </div>
-        </div>
-      </td>
-      <td className="px-3 py-4">
-        <div className="d-flex gap-2">
-          <div className="skeleton-badge" style={{ width: '64px' }}></div>
-          <div className="skeleton-badge" style={{ width: '80px' }}></div>
-        </div>
-      </td>
-      <td className="px-3 py-4">
-        <div className="skeleton-text" style={{ width: '80px' }}></div>
-      </td>
-      <td className="px-3 py-4 text-end">
-        <div className="d-flex justify-content-end gap-2">
-          <div className="skeleton-button"></div>
-          <div className="skeleton-button"></div>
-        </div>
-      </td>
-    </tr>
-  );
-
-  if (loading) {
-    return (
-      <div className="min-vh-100 bg-gradient-primary">
-        <Navigation onToggle={setSidebarCollapsed} />
-        <div className={`container-fluid py-4 main-content ${sidebarCollapsed ? 'collapsed' : ''}`}>
-          <div className="row justify-content-center">
-            <div className="col-12 col-xl-10">
-              {/* Header Skeleton */}
-              <div className="d-flex justify-content-between align-items-start mb-4">
-                <div>
-                  <div className="skeleton-text mb-2" style={{ width: '128px', height: '32px' }}></div>
-                  <div className="skeleton-text" style={{ width: '256px' }}></div>
-                </div>
-                <div className="d-none d-sm-block">
-                  <div className="skeleton-button" style={{ width: '128px', height: '48px' }}></div>
-                </div>
-              </div>
-
-              {/* Search Skeleton */}
-              <div className="mb-4">
-                <div className="skeleton-text" style={{ height: '48px' }}></div>
-              </div>
-
-              {/* Table Skeleton */}
-              <div className="card shadow-lg border-0 bg-white bg-opacity-90">
-                <div className="table-responsive">
-                  <table className="table table-hover mb-0">
-                    <thead className="table-light">
-                      <tr>
-                        <th className="px-3 py-3 text-uppercase fw-semibold text-muted small">User</th>
-                        <th className="px-3 py-3 text-uppercase fw-semibold text-muted small">Roles</th>
-                        <th className="px-3 py-3 text-uppercase fw-semibold text-muted small">Created</th>
-                        <th className="px-3 py-3"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...Array(5)].map((_, index) => (
-                        <SkeletonRow key={index} />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-vh-100 bg-gradient-primary">
-      <Navigation onToggle={setSidebarCollapsed} />
-      
-      <div className={`container-fluid py-4 main-content ${sidebarCollapsed ? 'collapsed' : ''}`}>
-        <div className="row justify-content-center">
-          <div className="col-12 col-xl-10">
-            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start mb-4">
-              <div className="mb-3 mb-sm-0">
-                <h1 className="display-6 fw-bold text-gradient fade-in mb-2">
-                  Users
-                </h1>
-                <p className="text-muted fade-in" style={{ animationDelay: '100ms' }}>
-                  Manage user accounts, roles, and permissions.
-                </p>
-              </div>
-              <div className="fade-in" style={{ animationDelay: '200ms' }}>
-                <button
-                  type="button"
-                  onClick={handleCreateUser}
-                  disabled={actionLoading}
-                  className="btn btn-gradient-primary btn-lg d-flex align-items-center shadow-lg"
-                >
-                  <PlusIcon className="me-2" style={{ width: '16px', height: '16px' }} />
-                  Add User
-                </button>
-              </div>
-            </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start mb-6">
+        <div className="mb-4 sm:mb-0">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Users
+          </h1>
+          <p className="text-gray-600">
+            Manage user accounts, roles, and permissions.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleCreateUser}
+          disabled={actionLoading}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+        >
+          <PlusIcon className="w-4 h-4" />
+          Add User
+        </button>
+      </div>
 
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center mb-4 slide-up border-0 shadow-sm">
-                <ExclamationTriangleIcon className="me-2 flex-shrink-0" style={{ width: '20px', height: '20px' }} />
-                {error}
-              </div>
-            )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+          <ExclamationTriangleIcon className="w-5 h-5 flex-shrink-0" />
+          {error}
+        </div>
+      )}
 
-            {/* Search */}
-            <div className="mb-4 fade-in" style={{ animationDelay: '300ms' }}>
-              <div className="position-relative">
-                <div className="position-absolute top-50 start-0 translate-middle-y ms-3">
-                  <MagnifyingGlassIcon className="text-muted" style={{ width: '20px', height: '20px' }} />
-                </div>
-                <input
-                  type="text"
-                  className="form-control form-control-lg ps-5 border-0 shadow-sm bg-white bg-opacity-75"
-                  placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{ backdropFilter: 'blur(10px)' }}
-                />
-              </div>
-            </div>
+      {/* Search */}
+      <div className="mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
 
-            {/* Users Table */}
-            <div className="fade-in" style={{ animationDelay: '400ms' }}>
-              <div className="card shadow-lg border-0 bg-white bg-opacity-90" style={{ backdropFilter: 'blur(10px)' }}>
-                <div className="table-responsive">
-                  <table className="table table-hover mb-0">
-                    <thead className="table-light">
-                      <tr>
-                        <th className="px-3 py-3 text-uppercase fw-semibold text-muted small border-0">
-                          User
-                        </th>
-                        <th className="px-3 py-3 text-uppercase fw-semibold text-muted small border-0">
-                          Roles
-                        </th>
-                        <th className="px-3 py-3 text-uppercase fw-semibold text-muted small border-0">
-                          Created
-                        </th>
-                        <th className="px-3 py-3 border-0"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUsers.map((user, index) => (
-                        <tr 
-                          key={user.id} 
-                          className="table-row-hover slide-up"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          <td className="px-3 py-4 border-0">
-                            <div className="d-flex align-items-center">
-                              <div className="me-3">
-                                <div className="avatar-gradient d-flex align-items-center justify-content-center shadow-sm">
-                                  <span className="fw-semibold text-white small">
-                                    {user.name.charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
-                              </div>
-                              <div>
-                                <div className="fw-semibold text-dark mb-1">
-                                  {user.name}
-                                </div>
-                                <div className="text-muted small">
-                                  {user.email}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-4 border-0">
-                            <div className="d-flex flex-wrap gap-2">
-                              {user.roles?.map((role, roleIndex) => (
-                                <span
-                                  key={role.id}
-                                  className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 scale-in"
-                                  style={{ animationDelay: `${(index * 50) + (roleIndex * 25)}ms` }}
-                                >
-                                  {role.name}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="px-3 py-4 border-0 text-muted small">
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-3 py-4 border-0">
-                            <div className="d-flex justify-content-end gap-2">
-                              <button
-                                onClick={() => handleEditUser(user)}
-                                disabled={deletingUserId === user.id || actionLoading}
-                                className="btn btn-sm btn-outline-primary border-0 hover-scale"
-                                title="Edit user"
-                              >
-                                <PencilIcon style={{ width: '16px', height: '16px' }} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteUser(user.id)}
-                                disabled={deletingUserId === user.id || actionLoading}
-                                className="btn btn-sm btn-outline-danger border-0 hover-scale position-relative"
-                                title="Delete user"
-                              >
-                                {deletingUserId === user.id ? (
-                                  <div className="spinner-border spinner-border-sm text-danger" role="status">
-                                    <span className="visually-hidden">Loading...</span>
-                                  </div>
-                                ) : (
-                                  <TrashIcon style={{ width: '16px', height: '16px' }} />
-                                )}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  
-                  {filteredUsers.length === 0 && !loading && (
-                    <div className="text-center py-5 fade-in">
-                      <div className="mx-auto mb-3 d-flex align-items-center justify-content-center scale-in" 
-                           style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', borderRadius: '50%' }}>
-                        {searchTerm ? (
-                          <MagnifyingGlassIcon className="text-muted" style={{ width: '32px', height: '32px' }} />
-                        ) : (
-                          <UserIcon className="text-muted" style={{ width: '32px', height: '32px' }} />
-                        )}
+      {/* Users Table */}
+      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Roles
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredUsers.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-sm font-medium text-blue-600">
+                            {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                          </span>
+                        </div>
                       </div>
-                      <h5 className="fw-semibold text-dark mb-2">No users found</h5>
-                      <p className="text-muted mb-3">
-                        {searchTerm ? 'Try adjusting your search terms.' : 'Get started by adding your first user.'}
-                      </p>
-                      {!searchTerm && (
-                        <button
-                          onClick={handleCreateUser}
-                          className="btn btn-primary d-inline-flex align-items-center hover-scale"
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {user.name || 'Unknown'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {user.email || 'No email'}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-wrap gap-1">
+                      {user.roles?.map((role) => (
+                        <span
+                          key={role.id}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                         >
-                          <PlusIcon className="me-2" style={{ width: '16px', height: '16px' }} />
-                          Add your first user
-                        </button>
+                          {role.name}
+                        </span>
+                      )) || (
+                        <span className="text-sm text-gray-400">No roles</span>
                       )}
                     </div>
-                  )}
-                </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => handleEditUser(user)}
+                        disabled={deletingUserId === user.id || actionLoading}
+                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50 p-1"
+                        title="Edit user"
+                      >
+                        <PencilIcon className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        disabled={deletingUserId === user.id || actionLoading}
+                        className="text-red-600 hover:text-red-900 disabled:opacity-50 p-1"
+                        title="Delete user"
+                      >
+                        {deletingUserId === user.id ? (
+                          <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <TrashIcon className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-12">
+              <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
+                {searchTerm ? (
+                  <MagnifyingGlassIcon className="w-12 h-12" />
+                ) : (
+                  <UserIcon className="w-12 h-12" />
+                )}
               </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+              <p className="text-gray-500 mb-4">
+                {searchTerm ? 'Try adjusting your search terms.' : 'Get started by adding your first user.'}
+              </p>
+              {!searchTerm && (
+                <button
+                  onClick={handleCreateUser}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto transition-colors"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Add your first user
+                </button>
+              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
 

@@ -8,7 +8,7 @@ const RoleModal = ({ role, permissions, onClose, onSave }) => {
     description: '',
     permission_ids: [],
   });
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
 
@@ -40,24 +40,27 @@ const RoleModal = ({ role, permissions, onClose, onSave }) => {
       }));
     }
     
-    setError('');
-    setErrors({});
+    // Clear errors when user starts typing
+    if (error) setError('');
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setError('');
     setErrors({});
 
     try {
-      let response;
       const roleData = {
         name: formData.name,
         description: formData.description,
         permissions: formData.permission_ids,
       };
 
+      let response;
       if (role) {
         // Update existing role
         response = await rolesAPI.update(role.id, roleData);
@@ -73,7 +76,7 @@ const RoleModal = ({ role, permissions, onClose, onSave }) => {
       setError(message);
       setErrors(validationErrors);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -91,160 +94,143 @@ const RoleModal = ({ role, permissions, onClose, onSave }) => {
   };
 
   return (
-    <div className="modal show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0, 0, 0, 0.5)'}}>
-      <div className="modal-dialog modal-dialog-centered modal-xl">
-        <div className="modal-content shadow-lg border-0" style={{borderRadius: '1rem'}}>
-          <div className="modal-header bg-gradient-primary border-0 text-white" style={{borderRadius: '1rem 1rem 0 0'}}>
-            <div className="d-flex align-items-center">
-              <div className="rounded-3 bg-white bg-opacity-20 d-flex align-items-center justify-content-center me-3 p-2">
-                <UserGroupIcon style={{width: '1.5rem', height: '1.5rem'}} className="text-white" />
-              </div>
-              <h5 className="modal-title fw-semibold mb-0">
-                {role ? 'Edit Role' : 'Create New Role'}
-              </h5>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b">
+          <div className="flex items-center">
+            <div className="rounded-lg bg-blue-100 p-2 mr-3">
+              <UserGroupIcon className="w-6 h-6 text-blue-600" />
             </div>
-            <button
-              type="button"
-              className="btn-close btn-close-white"
-              onClick={onClose}
-              aria-label="Close"
-            ></button>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {role ? 'Edit Role' : 'Create Role'}
+            </h3>
           </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
 
-          <div className="modal-body p-4">
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center mb-4" style={{borderRadius: '0.75rem'}}>
-                <div className="rounded-circle bg-danger me-2" style={{width: '0.5rem', height: '0.5rem'}}></div>
-                <span className="fw-medium">{error}</span>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Name Field */}
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Role Name
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <ShieldCheckIcon className="h-5 w-5 text-gray-400" />
               </div>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.name ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter role name"
+                required
+              />
+            </div>
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name[0]}</p>
             )}
-
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label htmlFor="name" className="form-label fw-semibold text-dark">
-                  Role Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  id="name"
-                  required
-                  className="form-control shadow-sm"
-                  style={{borderRadius: '0.75rem', backgroundColor: 'rgba(248, 249, 250, 0.8)'}}
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g., Administrator, Editor, Viewer"
-                />
-                {errors.name && (
-                  <div className="text-danger small mt-2 d-flex align-items-center">
-                    <div className="rounded-circle bg-danger me-2" style={{width: '0.25rem', height: '0.25rem'}}></div>
-                    {errors.name[0]}
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-4">
-                <label htmlFor="description" className="form-label fw-semibold text-dark">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  id="description"
-                  rows={3}
-                  className="form-control shadow-sm"
-                  style={{borderRadius: '0.75rem', backgroundColor: 'rgba(248, 249, 250, 0.8)', resize: 'none'}}
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Describe the role's responsibilities and access level..."
-                />
-                {errors.description && (
-                  <div className="text-danger small mt-2 d-flex align-items-center">
-                    <div className="rounded-circle bg-danger me-2" style={{width: '0.25rem', height: '0.25rem'}}></div>
-                    {errors.description[0]}
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <label className="form-label fw-semibold text-dark mb-0 d-flex align-items-center">
-                    <ShieldCheckIcon style={{width: '1rem', height: '1rem'}} className="text-primary me-2" />
-                    <span>Permissions</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={toggleAllPermissions}
-                    className="btn btn-outline-primary btn-sm"
-                    style={{borderRadius: '0.5rem'}}
-                  >
-                    {formData.permission_ids.length === permissions.length ? 'Deselect All' : 'Select All'}
-                  </button>
-                </div>
-                
-                <div className="border rounded-3 p-3 bg-light" style={{maxHeight: '16rem', overflowY: 'auto'}}>
-                  <div className="row g-3">
-                    {permissions.map((permission) => (
-                      <div key={permission.id} className="col-md-6">
-                        <div className="form-check p-3 rounded-3 hover-bg-white h-100">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id={`permission-${permission.id}`}
-                            name="permission_ids"
-                            value={permission.id}
-                            checked={formData.permission_ids.includes(permission.id)}
-                            onChange={handleChange}
-                          />
-                          <label className="form-check-label fw-medium text-dark" htmlFor={`permission-${permission.id}`}>
-                            {permission.name}
-                          </label>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {permissions.length === 0 && (
-                    <div className="text-center py-5">
-                      <ShieldCheckIcon style={{width: '3rem', height: '3rem'}} className="text-muted mx-auto mb-3" />
-                      <p className="text-muted fw-medium mb-0">No permissions available</p>
-                    </div>
-                  )}
-                </div>
-                {errors.permission_ids && (
-                  <div className="text-danger small mt-2 d-flex align-items-center">
-                    <div className="rounded-circle bg-danger me-2" style={{width: '0.25rem', height: '0.25rem'}}></div>
-                    {errors.permission_ids[0]}
-                  </div>
-                )}
-              </div>
-            </form>
           </div>
 
-          <div className="modal-footer border-top bg-light" style={{borderRadius: '0 0 1rem 1rem'}}>
+          {/* Description Field */}
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={3}
+              className={`block w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                errors.description ? 'border-red-300' : 'border-gray-300'
+              }`}
+              placeholder="Enter role description"
+            />
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600">{errors.description[0]}</p>
+            )}
+          </div>
+
+          {/* Permissions Field */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Permissions
+              </label>
+              <button
+                type="button"
+                onClick={toggleAllPermissions}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                {formData.permission_ids.length === permissions.length ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
+            <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-4 space-y-2">
+              {permissions.map((permission) => (
+                <label key={permission.id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="permission_ids"
+                    value={permission.id}
+                    checked={formData.permission_ids.includes(permission.id)}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-3 text-sm text-gray-700">{permission.name}</span>
+                </label>
+              ))}
+              {permissions.length === 0 && (
+                <p className="text-sm text-gray-500">No permissions available</p>
+              )}
+            </div>
+            {errors.permission_ids && (
+              <p className="mt-1 text-sm text-red-600">{errors.permission_ids[0]}</p>
+            )}
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
-              className="btn btn-secondary"
               onClick={onClose}
-              style={{borderRadius: '0.75rem'}}
+              disabled={submitting}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="btn btn-primary shadow-lg"
-              style={{borderRadius: '0.75rem', minWidth: '100px'}}
-              onClick={handleSubmit}
+              disabled={submitting}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              {loading ? (
-                <div className="spinner-border spinner-border-sm" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
+              {submitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  {role ? 'Updating...' : 'Creating...'}
+                </>
               ) : (
-                <span>{role ? 'Update Role' : 'Create Role'}</span>
+                role ? 'Update Role' : 'Create Role'
               )}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

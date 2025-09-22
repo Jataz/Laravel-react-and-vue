@@ -24,6 +24,7 @@ const UserManagement = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchData();
@@ -31,6 +32,7 @@ const UserManagement = () => {
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       // Fetch both users and roles concurrently
       const [usersResponse, rolesResponse] = await Promise.allSettled([
         usersAPI.getAll(),
@@ -52,6 +54,8 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to load data. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -242,7 +246,15 @@ const UserManagement = () => {
               </div>
             </div>
 
-            {filteredUsers.length === 0 && (
+            {loading ? (
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary mb-3" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <h5 className="fw-medium text-dark mb-2">Loading users...</h5>
+                <p className="text-muted small">Please wait while we fetch the data.</p>
+              </div>
+            ) : filteredUsers.length === 0 && (
               <div className="text-center py-5 fade-in">
                 <div className="mx-auto rounded-circle bg-light d-flex align-items-center justify-content-center mb-3" style={{width: '4rem', height: '4rem'}}>
                   <UserIcon style={{width: '2rem', height: '2rem'}} className="text-muted" />

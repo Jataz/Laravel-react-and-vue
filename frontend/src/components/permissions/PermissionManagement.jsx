@@ -23,6 +23,7 @@ const PermissionManagement = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [permissionToDelete, setPermissionToDelete] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchPermissions();
@@ -30,11 +31,14 @@ const PermissionManagement = () => {
 
   const fetchPermissions = async () => {
     try {
+      setLoading(true);
       const response = await permissionsAPI.getAll();
       setPermissions(response.data.data);
     } catch (error) {
       setError('Failed to fetch permissions');
       console.error('Error fetching permissions:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -209,7 +213,14 @@ const PermissionManagement = () => {
               </div>
             </div>
 
-            {filteredPermissions.length === 0 && (
+            {loading ? (
+              <div className="text-center py-5 fade-in">
+                <div className="spinner-border text-primary mb-3" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="text-muted small">Loading permissions...</p>
+              </div>
+            ) : filteredPermissions.length === 0 && (
               <div className="text-center py-5 fade-in">
                 <div className="mx-auto rounded-circle bg-light d-flex align-items-center justify-content-center mb-3" style={{width: '4rem', height: '4rem'}}>
                   <KeyIcon style={{width: '2rem', height: '2rem'}} className="text-muted" />

@@ -23,6 +23,7 @@ const RoleManagement = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchData();
@@ -30,6 +31,7 @@ const RoleManagement = () => {
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const [rolesResponse, permissionsResponse] = await Promise.allSettled([
         rolesAPI.getAll(),
         permissionsAPI.getAll()
@@ -50,6 +52,8 @@ const RoleManagement = () => {
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to load data');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -246,7 +250,14 @@ const RoleManagement = () => {
                 </div>
               </div>
 
-              {filteredRoles.length === 0 && (
+              {loading ? (
+                <div className="text-center py-5 fade-in">
+                  <div className="spinner-border text-primary mb-3" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                  <p className="text-muted small">Loading roles...</p>
+                </div>
+              ) : filteredRoles.length === 0 && (
                 <div className="text-center py-5 fade-in">
                   <div className="mx-auto rounded-circle bg-light d-flex align-items-center justify-content-center mb-3" style={{width: '4rem', height: '4rem'}}>
                     <ShieldCheckIcon style={{width: '2rem', height: '2rem'}} className="text-muted" />
